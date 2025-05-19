@@ -1,12 +1,13 @@
 package ru.otus
 
-import ru.otus.module1.{hof, pattern_matching, type_system}
+import ru.otus.module1.collections.ListLike
+import ru.otus.module1.{collections, hof, pattern_matching, type_system}
 
 
 object App {
   def main(args: Array[String]): Unit = {
-    val arr = List(10)
+    ListLike(1, 2, 3).foreach(println)
+    ListLike("a", "b").headOption.foreach(println)
 
-    println(arr.isInstanceOf[List[String]])
   }
 }
