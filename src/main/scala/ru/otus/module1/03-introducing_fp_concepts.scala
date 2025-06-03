@@ -95,29 +95,7 @@ object hof{
 
   def partial[A, B, C](a: A)(f: (A, B) => C): B => C =
     f.curried(a)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 }
-
-
-
-
 
 
 /**
@@ -164,7 +142,39 @@ object hof{
 
     def map[B](f: T => B): Option[B] = flatMap(v => Option(f(v)))
 
-    def flatMap[B](f: T => Option[B]): Option[B] = ???
+    def flatMap[B](f: T => Option[B]): Option[B] = this match {
+      case Some(v) => f(v)
+    }
+
+    /**
+     *
+     * Реализовать метод printIfAny, который будет печатать значение, если оно есть
+     */
+    def printIfAny(): Unit = this match {
+      case Some(x) => println(x)
+      case None => println("")
+    }
+
+    /**
+     *
+     * Реализовать метод zip, который будет создавать Option от пары значений из 2-х Option
+     */
+    def zip[B](other: Option[B]): Option[(T, B)] = this match {
+      case Some(x) => other match {
+        case Some(y) => Some((x, y))
+        case None => None
+      }
+    }
+
+    /**
+     *
+     * Реализовать метод filter, который будет возвращать не пустой Option
+     * в случае если исходный не пуст и предикат от значения = true
+     */
+    def filter(predicate: T => Boolean): Option[T] = this match {
+      case Some(x) if predicate(x) => Some(x)
+      case _ => None
+    }
   }
 
   case class Some[T](v: T) extends Option[T]
@@ -176,33 +186,23 @@ object hof{
       if(v == null) None else Some(v)
   }
 
-  val opt1 : Option[Int] = ???
+  val opt1 : Option[Int] = Option(17)
 
   val opt2: Option[Option[Int]] = opt1.map(i => Option(i + 1))
   val opt3: Option[Int] = opt1.flatMap(i => Option(i + 1))
 
+  println(opt1)
+  println(opt2)
+  println(opt3)
 
-
-
-  /**
-   *
-   * Реализовать метод printIfAny, который будет печатать значение, если оно есть
-   */
-
-
-  /**
-   *
-   * Реализовать метод zip, который будет создавать Option от пары значений из 2-х Option
-   */
-
-
-  /**
-   *
-   * Реализовать метод filter, который будет возвращать не пустой Option
-   * в случае если исходный не пуст и предикат от значения = true
-   */
 
  }
+
+
+
+
+
+
 
  object list {
    /**
@@ -213,28 +213,140 @@ object hof{
     * Cons - непустой, содержит первый элемент (голову) и хвост (оставшийся список)
     */
 
-   def treat(a: Option[Animal]) = ???
+//   def treat(a: Option[Animal]) = ???
 
     sealed trait List[+T] {
+     def head: T
 
-     // prepend
-     def ::[TT >: T](elem: TT): List[TT] = ???
+     def tail: List[T]
+
+     def isEmpty: Boolean
+
+     def ::[TT >: T](elem: TT): List[TT]
+
+     def :::[TT >: T](list: List[TT]): List[TT]
+
+     def map[TT >: T](f: T => TT): List[TT]
+
+     def flatMap[TT >: T](f: T => List[TT]): List[TT]
+
+     def filter(predicate: T => Boolean): List[T]
+
+     def reverse: List[T]
+
+     def mkString(sep: String = ", "): String
+
    }
-    case class ::[T](elem: T, tail: List[T]) extends List[T]
-    case object Nil extends List[Nothing]
+
+
+    case class Cons[T](elem: T, tail: List[T]) extends List[T] {
+
+      def head: T = elem
+
+      def ::[TT >: T](elem: TT): List[TT] = {
+        Cons(elem, this)
+      }
+
+      def isEmpty: Boolean = {
+        head == null & tail == List()
+      }
+
+      def :::[TT >: T](other: List[TT]): List[TT] = {
+        val reversed = this.reverse
+        @tailrec
+        def run(lst: List[TT], res: List[TT] = other): List[TT] = {
+          if (lst.isEmpty) res
+          else run(lst.tail, lst.head :: (res))
+        }
+        run(reversed)
+      }
+
+      def map[TT >: T](f: T => TT): List[TT] = this match {
+        case y if y.isEmpty => Nil
+        case x: List[T] => f(x.head) :: x.tail.map(f)
+      }
+
+      def flatMap[TT >: T](f: T => List[TT]): List[TT] = this match {
+        case null => this.asInstanceOf[List[TT]]
+        case x: List[TT] => f(x.head).:::(x.tail.flatMap(f))
+      }
+
+      def filter(predicate: T => Boolean): List[T] = {
+        @tailrec
+        def run(lst: List[T], res: List[T] = List()): List[T] = {
+          lst match {
+            case Nil => res
+            case _ => if (predicate(lst.head)) {
+              run(lst.tail, lst.head :: res)
+            } else {
+              run(lst.tail, res)
+            }
+          }
+        }
+        run(this.asInstanceOf[List[T]])
+      }
+
+      def reverse: List[T] = {
+        @tailrec
+        def run(lst: List[T], res: List[T] = List()): List[T] = {
+          lst match {
+            case Nil => res
+            case _ => run(lst.tail, lst.head :: res)
+          }
+        }
+        run(this.asInstanceOf[List[T]])
+      }
+
+      def mkString(sep: String = ", "): String = {
+        @tailrec
+        def run(lst: List[T], res: String = ""): String = {
+          lst match {
+            case Nil => s"List($res)"
+            case _ => if (res.isEmpty) {
+              run(lst.tail, res + s"${lst.head}")
+            } else {
+              run(lst.tail, res + sep + s"${lst.head}")
+            }
+          }
+        }
+        run(this.asInstanceOf[List[T]])
+      }
+    }
+
+
+
+    case object Nil extends List[Nothing] {
+      override def head: Nothing = throw new NoSuchElementException("No element")
+      override def tail: List[Nothing] = throw new NotImplementedError("No elements inside")
+      override def isEmpty: Boolean = true
+      override def ::[T](element: T): List[T] = List(element)
+      override def :::[T](other: List[T]): List[T] = other
+      override def map[T](f: Nothing => T): List[T] = Nil
+      override def flatMap[T](f: Nothing => List[T]): List[T] = Nil
+      override def filter(predicate: Nothing => Boolean): List[Nothing] = Nil
+      override def reverse: List[Nothing] = Nil
+      override def mkString(sep: String): String = ""
+    }
 
    object List {
      def apply[A](v: A*): List[A] =
        if(v.isEmpty) Nil
-       else new ::(v.head, apply(v.tail :_*))
+       else Cons(v.head, apply(v.tail :_*))
    }
+
+
+   def incList(list: List[Int]): List[Int] = {
+     list.map(_ + 1)
+   }
+
+   def shoutString(list: List[String]): List[String] = {
+     list.map(el => s"!$el")
+   }
+
 
    val l1 = List(1, 2, 3)
 
    val l2: List[Cat] = List(Cat())
-
-
-
 
 
 
@@ -250,29 +362,31 @@ object hof{
       *
       * Реализовать метод reverse который позволит заменить порядок элементов в списке на противоположный
       */
+    println(l1.reverse.mkString())
 
     /**
       *
       * Реализовать метод map для списка который будет применять некую ф-цию к элементам данного списка
       */
-
+    println(l1.map(x => x * x).mkString())
 
     /**
       *
       * Реализовать метод filter для списка который будет фильтровать список по некому условию
       */
+    println(l1.filter(x => x % 2 == 0).mkString())
 
     /**
       *
       * Написать функцию incList которая будет принимать список Int и возвращать список,
       * где каждый элемент будет увеличен на 1
       */
-
+    println(incList(l1).mkString())
 
     /**
       *
       * Написать функцию shoutString которая будет принимать список String и возвращать список,
       * где к каждому элементу будет добавлен префикс в виде '!'
       */
-
+    println(shoutString(List("abc", "def", "ghi")))
  }
