@@ -1,5 +1,6 @@
 package ru.otus.module3
 
+import ru.otus.module3.tryFinally.zioResource
 import zio.{Clock, Scope, Unsafe, ZEnvironment, ZIO, ZIOAppArgs, ZIOAppDefault}
 
 import scala.io.StdIn
@@ -14,9 +15,7 @@ object ZioApp {
       // println(zioRecursion.factorial(Number))
 
       Unsafe.unsafe { implicit u =>
-        zio.Runtime.default.unsafe.run(zioConcurrency.printEffectRunningTime(zioConcurrency.r4)
-          .provideEnvironment(environment))
-      }
+        zio.Runtime.default.unsafe.run(ZIO.scoped(zioScope.cc))      }
   }
 
 }
